@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Invisibility Cloak Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      text-align: center;
+      padding: 20px;
+    }
+
+    #parnia-watermark {
+      position: absolute;
+      top: 5px;
+      left: 10px;
+      font-size: 12px;
+      color: #888;
+      font-style: italic;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    #controls {
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .color-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid #333;
+      margin: 5px;
+      display: inline-block;
+      cursor: pointer;
+    }
+
+    #color-picker {
+      margin: 15px 0;
+      display: none;
+    }
+
+    video {
+      border: 2px solid #444;
+      margin: 10px;
+      transform: scaleX(-1);
+    }
+
+    img {
+      border: 2px solid #444;
+      margin: 10px;
+    }
+
+    #background-message {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #555;
+    }
+
+    #countdown {
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+      margin: 20px 0;
+    }
+
+    #countdown.small-message {
+      font-size: 16px;
+      color: green;
+    }
+
+    #color-message {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      margin: 10px 0;
+      display: none;
+    }
+
+    #video-output-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  <div id="parnia-watermark">property of Parnia Osati :)</div>
+
+  <h1>🧙 Invisibility Cloak Game</h1>
+
+  <div id="controls">
+    <div id="background-message">
+      👋 Please move away from the camera to capture the background.
+    </div>
+    <button id="capture-btn" onclick="startCountdown()">📸 Capture Background</button>
+    <div id="countdown"></div>
+
+    <div id="color-message">🎨 Choose your cloak's color</div>
+    <div id="color-picker">
+      <div class="color-btn" style="background:red" onclick="setColor('red')"></div>
+      <div class="color-btn" style="background:green" onclick="setColor('green')"></div>
+      <div class="color-btn" style="background:blue" onclick="setColor('blue')"></div>
+      <div class="color-btn" style="background:yellow" onclick="setColor('yellow')"></div>
+    </div>
+  </div>
+
+  <div id="video-output-container">
+    <video id="video" width="320" height="240" autoplay muted></video>
+    <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+    <img id="output" width="320" height="240"/>
+  </div>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const output = document.getElementById('output');
+    const ctx = canvas.getContext('2d');
+    const backgroundMessage = document.getElementById('background-message');
+    const countdownDisplay = document.getElementById('countdown');
+    const captureBtn = document.getElementById('capture-btn');
+    const colorPicker = document.getElementById('color-picker');
+    const colorMessage = document.getElementById('color-message');
+
+    let selectedColor = null;
+    let backgroundCaptured = false;
+
+    navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+      video.srcObject = stream;
+      setInterval(() => {
+        if (selectedColor && backgroundCaptured) {
+          sendFrame();
+        }
+      }, 500);
+    });
+
+    function startCountdown() {
+      backgroundMessage.style.display = 'none';
+      captureBtn.style.display = 'none';
+
+      let countdown = 3;
+      countdownDisplay.textContent = `⏳ ${countdown}...`;
+
+      const timer = setInterval(() => {
+        countdown--;
+        if (countdown > 0) {
+          countdownDisplay.textContent = `⏳ ${countdown}...`;
+        } else {
+          clearInterval(timer);
+          captureBackground();
+        }
+      }, 1000);
+    }
+
+    function captureBackground() {
+      console.log("📸 Capturing background...");
+      drawToCanvas();
+      const image = canvas.toDataURL('image/jpeg');
+      fetch('http://127.0.0.1:5000/ready', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: image })
+      }).then(res => res.json()).then(data => {
+        console.log("✅ Background captured!");
+        backgroundCaptured = true;
+        countdownDisplay.classList.add("small-message");
+        countdownDisplay.textContent = "✅ Background capture complete!";
+        
+        setTimeout(() => {
+          countdownDisplay.textContent = "";
+          countdownDisplay.classList.remove("small-message");
+
+          colorMessage.style.display = 'block';
+          colorPicker.style.display = 'block';
+        }, 3000);
+      });
+    }
+
+    function setColor(color) {
+      console.log("🎨 Setting color to:", color);
+      selectedColor = color;
+      fetch('http://127.0.0.1:5000/set-color', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ color: color })
+      }).then(res => res.json()).then(data => {
+        console.log("✅ Color set to:", color);
+      });
+    }
+
+    function drawToCanvas() {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    }
+
+    function sendFrame() {
+      drawToCanvas();
+      const image = canvas.toDataURL('image/jpeg');
+      fetch('http://127.0.0.1:5000/process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: image })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.image) {
+          output.src = data.image;
+        }
+      });
+    }
+  </script>
+</body>
+</html>
