@@ -116,7 +116,7 @@
   </div>
 
   <div id="video-output-container">
-    <video id="video" width="320" height="240" autoplay muted playsinline></video>
+    <video id="video" width="320" height="240" autoplay muted></video>
     <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
     <img id="output" width="320" height="240"/>
   </div>
@@ -153,11 +153,8 @@
 
       const timer = setInterval(() => {
         countdown--;
-
         if (countdown > 0) {
           countdownDisplay.textContent = `⏳ ${countdown}...`;
-        } else if (countdown === 0) {
-          countdownDisplay.textContent = `⏳ 1...`;
         } else {
           clearInterval(timer);
           captureBackground();
@@ -178,10 +175,11 @@
         backgroundCaptured = true;
         countdownDisplay.classList.add("small-message");
         countdownDisplay.textContent = "✅ Background capture complete!";
-
+        
         setTimeout(() => {
           countdownDisplay.textContent = "";
           countdownDisplay.classList.remove("small-message");
+
           colorMessage.style.display = 'block';
           colorPicker.style.display = 'block';
         }, 3000);
