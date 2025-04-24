@@ -116,7 +116,7 @@
   </div>
 
   <div id="video-output-container">
-    <video id="video" width="320" height="240" autoplay muted></video>
+    <video id="video" width="320" height="240" autoplay muted playsinline></video>
     <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
     <img id="output" width="320" height="240"/>
   </div>
@@ -153,8 +153,11 @@
 
       const timer = setInterval(() => {
         countdown--;
+
         if (countdown > 0) {
           countdownDisplay.textContent = `⏳ ${countdown}...`;
+        } else if (countdown === 0) {
+          countdownDisplay.textContent = `⏳ 1...`;
         } else {
           clearInterval(timer);
           captureBackground();
@@ -166,7 +169,7 @@
       console.log("📸 Capturing background...");
       drawToCanvas();
       const image = canvas.toDataURL('image/jpeg');
-      fetch('http://127.0.0.1:5000/ready', {
+      fetch('https://cloak-backend.onrender.com/ready', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: image })
@@ -175,11 +178,10 @@
         backgroundCaptured = true;
         countdownDisplay.classList.add("small-message");
         countdownDisplay.textContent = "✅ Background capture complete!";
-        
+
         setTimeout(() => {
           countdownDisplay.textContent = "";
           countdownDisplay.classList.remove("small-message");
-
           colorMessage.style.display = 'block';
           colorPicker.style.display = 'block';
         }, 3000);
@@ -189,7 +191,7 @@
     function setColor(color) {
       console.log("🎨 Setting color to:", color);
       selectedColor = color;
-      fetch('http://127.0.0.1:5000/set-color', {
+      fetch('https://cloak-backend.onrender.com/set-color', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ color: color })
@@ -205,7 +207,7 @@
     function sendFrame() {
       drawToCanvas();
       const image = canvas.toDataURL('image/jpeg');
-      fetch('http://127.0.0.1:5000/process', {
+      fetch('https://cloak-backend.onrender.com/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: image })

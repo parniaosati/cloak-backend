@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: invisibility-cloak-backend
+    runtime: python
+    buildCommand: ""
+    startCommand: "python app.py"
+    envVars:
+      - key: FLASK_ENV
+        value: production
+    autoDeploy: true
